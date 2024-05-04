@@ -31,7 +31,7 @@ fn main() -> std::io::Result<()> {
         empty_column[galaxy.column]=false;
         empty_row[galaxy.row]=false;
     }
-
+    let age_coefficient=1000000-1;
     for mut galaxy in &mut galaxies {
         let mut empty_rows: usize =0;
         for i in 0..galaxy.row {
@@ -45,8 +45,8 @@ fn main() -> std::io::Result<()> {
                 empty_columns+=1;
             }
         }
-        galaxy.row=galaxy.row+empty_rows;
-        galaxy.column=galaxy.column+empty_columns;
+        galaxy.row=galaxy.row+empty_rows*age_coefficient;
+        galaxy.column=galaxy.column+empty_columns*age_coefficient;
     }
 
     // println!("{:?}", galaxies);
