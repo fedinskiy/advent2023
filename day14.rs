@@ -22,6 +22,7 @@ fn main() -> std::io::Result<()> {
         platform.add(row)
     );
     println!("{platform:?}");
+    println!("{:?}", platform.transposed().move_left().transposed().load());
     Ok(())
 }
 
@@ -66,11 +67,62 @@ impl Platform {
     fn new() ->Self {
         Platform {spaces: Vec::new()}
     }
-    
-    fn move_north(&mut self) {
-        for 
+
+    fn transposed(&self) -> Self {
+        let mut transposed=Platform::new();
+        for column in 0..self.spaces[0].len() {
+            let mut new_row=Vec::new();
+            for old_row in &self.spaces {
+                new_row.push(old_row[column]);
+            }
+            transposed.spaces.push(new_row);
+        }
+        return transposed;
     }
-}
+    
+    fn move_left(&self) -> Self {
+        let mut moved=Platform::new();
+
+        for row in &self.spaces {
+            let mut arranged:Vec<Stone>=Vec::new();
+            let mut first_empty:usize=0;
+            for (position, symbol) in row.iter().enumerate() {
+                // println!("{symbol:?}, [{position:?}], {first_empty:?}");
+                match symbol {
+                    Stone::Empty => arranged.push(Stone::Empty),
+                    Stone::Square => {
+                        arranged.push(Stone::Square);
+                        first_empty=position+1;
+                    },
+                    Stone::Round =>{
+                        arranged.push(Stone::Empty);
+                        arranged[first_empty]=Stone::Round;
+                        first_empty=first_empty+1;
+                    },
+                }
+                // println!("{symbol:?}, [{position:?}], {first_empty:?}\n");
+            }
+            moved.spaces.push(arranged);
+        }
+
+        moved
+    }
+
+    fn load(&self) -> usize {
+        let total_height=self.spaces.len();
+        let mut sum:usize=0;
+
+        for (row, content) in self.spaces.iter().enumerate(){
+            let multiplier=total_height-row;
+            for position in content {
+                if *position==Stone::Round {
+                    sum+=multiplier;
+                }
+            }
+        }
+        sum
+    }
+} 
 
 fn parse(input: &str) -> Vec<Stone> {
     input.chars().map(|c| Stone::from_char(c)).collect()
