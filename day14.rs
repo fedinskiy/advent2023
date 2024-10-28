@@ -5,9 +5,6 @@ use std::env;
 use std::fmt;
 
 fn main() -> std::io::Result<()> {
-
-    let row=parse("#.##.O.##.");
-    println!("{:?}", row);
     println!("start");
     let file=File::open(env::args().nth(1).unwrap())?;
     let reader = BufReader::new(file);
@@ -22,9 +19,59 @@ fn main() -> std::io::Result<()> {
         platform.add(row)
     );
     println!("{platform:?}");
-    println!("{:?}", platform.transposed().move_left().transposed().load());
+    // debug(&platform,2);
+    // debug(&platform,9);
+    println!("{:?}", get_answer(&platform));
     Ok(())
 }
+
+fn debug(platform: &Platform, cycles: usize) {
+    let mut debugged=platform.clone();
+    for _ in 0..=cycles {
+        debugged=debugged.cycled();   
+    }
+    println!("After {cycles}:{:?} \n {debugged:?}", debugged.load());
+}
+
+fn get_answer(source: &Platform) -> usize {
+    let mut hashes: Vec<usize>=Vec::new();
+    let mut loads: Vec<usize>=Vec::new();
+    let mut platform=source.clone();
+    let repeats=1000000000;
+    // let repeats=20;
+    for current in 0..repeats {
+        if current%100==0 {
+            println!("Processing {current}");
+        }
+        platform=platform.cycled();
+        loads.push(platform.load());
+        let current_hash=platform.load()+2*platform.transposed().load();
+        match hashes.iter().position(|&hash| hash==current_hash) {
+            None => hashes.push(current_hash),
+            Some(shift) => {
+                println!("Found repeat ({}) on positions {} and {}",
+                current_hash, shift, current);
+                println!("{hashes:?}");
+                println!("{loads:?}");
+                
+                let cycled_values=repeats-shift;
+                println!("{cycled_values}");
+                let cycle_length=current-shift;
+                println!("{cycle_length}");
+                let phase=cycled_values%cycle_length;
+                println!("{phase}");
+                let answer=loads[phase+shift-1];
+                println!("Early return: {}", answer);
+                return answer;
+            }
+        }
+    }
+    platform.load()
+}
+//  0   1   2   3   4   5    6  7   8   9   10  11  12
+//  271 235 223 211 199 202 209 217 228 223 211 199 202, 209, 217, 228, 223, 211, 199]
+//  87  69  69  69  65  64  65  63  68  69  69  65  64, 65, 63, 68, 69, 69, 65, 64]
+
 
 #[derive(Copy, Clone, PartialEq)]
 enum Stone {
@@ -68,6 +115,15 @@ impl Platform {
         Platform {spaces: Vec::new()}
     }
 
+    fn cycled(&self) -> Self {
+        self
+        .transposed().move_left() //move north
+        .transposed().move_left() //move west
+        .inverted().transposed().move_left() //move south
+        .inverted().transposed().move_left() //move east
+        .inverted().mirrored() //north to the top
+    }
+
     fn transposed(&self) -> Self {
         let mut transposed=Platform::new();
         for column in 0..self.spaces[0].len() {
@@ -78,6 +134,25 @@ impl Platform {
             transposed.spaces.push(new_row);
         }
         return transposed;
+    }
+
+    fn inverted(&self) -> Self {
+        let mut inverted=Platform::new();
+        for row in self.spaces.iter().rev() {
+            inverted.spaces.push(row.clone())
+        }
+        return inverted;
+    }
+
+    fn mirrored(&self) -> Self {
+        let mut result=Platform::new();
+        for row in self.spaces.iter() {
+            result.spaces.push(row.clone()
+            .into_iter()
+            .rev()
+            .collect())
+        }
+        return result;
     }
     
     fn move_left(&self) -> Self {
