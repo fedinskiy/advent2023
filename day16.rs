@@ -14,12 +14,48 @@ fn main() -> std::io::Result<()> {
         .filter_map(Result::ok)
         .collect();
     let layout=Layout{objects: lines};
-    let results=Energized::create_for(&layout);
-    println!("{layout:?}");
-    let results=process(&layout, results, Direction::FromLeft, Position(0,0));
-    println!("{results:?}");
-    println!("{}", results.count());
+    println!("Max: {}", get_max_result(&layout));
     Ok(())
+}
+
+fn get_max_result(field: &Layout) -> usize {
+    let mut max=0;
+    let vertical=field.objects.len();
+    let horisontal=field.objects[0].len();
+
+    let mut starts: Vec<(Direction,Position)> = Vec::with_capacity(vertical*2+horisontal*2);
+    
+    //left side
+    for i in 0..vertical {
+        starts.push((Direction::FromLeft, Position(i,0)));
+    }
+    //right side
+    for i in 0..vertical {
+        starts.push((Direction::FromRight, Position(i,horisontal-1)));
+    }
+    //top
+    for i in 0..horisontal {
+        starts.push((Direction::Top, Position(0,i)));
+    }
+    //bottom
+    for i in 0..horisontal {
+        starts.push((Direction::Below, Position(vertical-1,i)));
+    }
+    println!("{field:?}");
+    println!("{starts:?}");
+    for start in starts {
+        let (direction,position)=start;
+        let energised=Energized::create_for(&field);
+        let energised=process(&field, energised, direction, position);
+        let count= energised.count();
+        // println!("{energised:?}");
+        println!("{}", count);
+        if count>max {
+            max=count;
+        }
+    }
+
+    max
 }
 
 #[derive(Clone)]
